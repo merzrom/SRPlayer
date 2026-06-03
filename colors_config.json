@@ -1,0 +1,51 @@
+{
+  "results_tags": {
+    "number": {
+      "foreground": "#979695",
+      "description": "Номер трека (красный)"
+    },
+    "id": {
+      "foreground": "#9C9E9B",
+      "description": "ID трека (голубой)"
+    },
+    "title": {
+      "foreground": "#61A0F3",
+      "description": "Название трека (фиолетовый)"
+    },
+    "selected": {
+      "background": "#1E3A8A",
+      "foreground": "#FFFFFF",
+      "description": "Выбранная строка (синий фон)"
+    }
+  },
+  "log_tags": {
+    "timestamp": {
+      "foreground": "#B0BEC5",
+      "description": "Временная метка (серый)"
+    },
+    "success": {
+      "foreground": "#81C784",
+      "description": "Успех (зелёный)"
+    },
+    "error": {
+      "foreground": "#E57373",
+      "description": "Ошибка (красный)"
+    },
+    "warning": {
+      "foreground": "#FFB74D",
+      "description": "Предупреждение (оранжевый)"
+    },
+    "info": {
+      "foreground": "#64B5F6",
+      "description": "Информация (синий)"
+    }
+  },
+  "player_labels": {
+    "current_track": {
+      "foreground": "#1A48DD",
+      "background": "#212121",
+      "description": "Текущий трек в плеере"
+    }
+  }
+}
+
