@@ -248,13 +248,14 @@ class StaroeRadioPlayer:
         btn_frame = ttk.Frame(control_frame)
         btn_frame.pack(pady=5)
 
-        ttk.Button(btn_frame, text="⏮", command=self.prev_track).pack(side=tk.LEFT, padx=2)
-        # ttk.Button(btn_frame, text="▶", command=self.play_current).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="⏯", command=self.pause).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="⏹", command=self.stop).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="⏭", command=self.next_track).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="⏪", command=self.prev_track).pack(side=tk.LEFT, padx=2)
+        # ttk.Button(btn_frame, text="▶️", command=self.play_current).pack(side=tk.LEFT, padx=2)
+        self.play_pause_btn = ttk.Button(btn_frame, text="⏸️", command=self.pause)
+        self.play_pause_btn.pack(side=tk.LEFT, padx=2)
+        # ttk.Button(btn_frame, text="⏹", command=self.stop).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="⏩", command=self.next_track).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="⭐", command=self.add_to_favorites).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="💿 MP3", command=self.download_selected_mp3).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="💾", command=self.download_selected_mp3).pack(side=tk.LEFT, padx=2)
 
 
         # Громкость
@@ -420,6 +421,9 @@ class StaroeRadioPlayer:
             except Exception as e:
                 self.log(f"❌ Ошибка чтения {file_path}: {e}")
 
+        # staroeradio.txt — приоритетный источник, выводим первым
+        results.sort(key=lambda r: 0 if r['source'] == 'staroeradio.txt' else 1)
+
         self.current_results = results
         self.update_results_list()
 
@@ -527,22 +531,26 @@ class StaroeRadioPlayer:
         self.player.audio_set_volume(self.volume_var.get())
 
         self.is_playing = True
+        self.play_pause_btn.config(text="⏸️")
 
     def pause(self):
         if self.player.is_playing():
             self.player.pause()
             self.is_playing = False
+            self.play_pause_btn.config(text="▶️")
             self.log("⏸ Пауза")
 
         elif self.player.get_state() == vlc.State.Paused:
             self.player.play()
             self.is_playing = True
+            self.play_pause_btn.config(text="⏸️")
             self.log("▶ Возобновлено")
 
     def stop(self):
         self.player.stop()
         self.is_playing = False
         self.playing_track = None
+        self.play_pause_btn.config(text="▶️")
         self.auto_play_enabled = False  # Отключаем автовоспроизведение при ручной остановке
         self.current_label.config(text="Нет трека")
         self.progress_slider.set(0)
@@ -1183,6 +1191,8 @@ class StaroeRadioPlayer:
 
             self.playing_track = track
             self.current_label.config(text=f"{track['title']}")
+            self.is_playing = True
+            self.play_pause_btn.config(text="⏸️")
 
             # Даём плееру время на загрузку, затем устанавливаем позицию
             self.root.after(1000, lambda: self.player.set_time(int(position)))
@@ -1201,7 +1211,7 @@ class StaroeRadioPlayer:
 
         if not HAS_BS4:
             self.root.after(0, lambda: self._display_track_info(
-                audio_id, "⚠️  Для парсинга описания установите beautifulsoup4:\npip install beautifulsoup4", [], []
+                audio_id, "⚠️  Для парсинга описания установите beautifulsoup4:\npip install beautifulsoup4", [], [], track.get('source', 'staroeradio.txt')
             ))
             return
 
@@ -1259,7 +1269,7 @@ class StaroeRadioPlayer:
         except Exception as e:
             description = f"❌ Ошибка загрузки страницы: {e}"
 
-        self.root.after(0, lambda: self._display_track_info(audio_id, description, image_links, page_links))
+        self.root.after(0, lambda: self._display_track_info(audio_id, description, image_links, page_links, track.get('source', 'staroeradio.txt')))
 
     def load_program(self):
         """Загрузить программу передач со staroeradio.ru/program/full"""
@@ -1338,7 +1348,7 @@ class StaroeRadioPlayer:
         self.update_results_list()
         self.log(f"✅ Программа передач загружена: {len(results)} записей")
 
-    def _display_track_info(self, audio_id, description, image_links, page_links=None):
+    def _display_track_info(self, audio_id, description, image_links, page_links=None, source='staroeradio.txt'):
         """Вывести описание и изображения в панель (в главном потоке)"""
         try:
             from PIL import Image, ImageTk
@@ -1352,8 +1362,12 @@ class StaroeRadioPlayer:
         self.info_text.config(state=tk.NORMAL)
         self.info_text.delete(1.0, tk.END)
 
-        # Заголовок с ID
-        self.info_text.insert(tk.END, f"🎵 ID: {audio_id}\n", "header")
+        # Заголовок с ID (и названием каталога/ресурса, если не staroeradio)
+        if source and source != 'staroeradio.txt':
+            site_name = os.path.splitext(source)[0]
+            self.info_text.insert(tk.END, f"🎵 {site_name} ID: {audio_id}\n", "header")
+        else:
+            self.info_text.insert(tk.END, f"🎵 ID: {audio_id}\n", "header")
         self.info_text.insert(tk.END, "─" * 40 + "\n", "header")
 
         # Описание
@@ -1601,7 +1615,7 @@ class StaroeRadioPlayer:
             f.write(f"{today} {time_str}\n")
             f.write(f"{track['id']}\t{track['title']}\n")
 
-        self.log(f"★⭐ Добавлено в избранное: {track['title'][:40]}")        
+        self.log(f"⭐★ Добавлено в избранное: {track['title'][:40]}")        
 
     def on_closing(self):
         self.save_state()
