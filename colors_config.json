@@ -2,15 +2,19 @@
   "results_tags": {
     "number": {
       "foreground": "#979695",
-      "description": "Номер трека (красный)"
-    },
-    "id": {
-      "foreground": "#9C9E9B",
-      "description": "ID трека (голубой)"
+      "description": "Номер трека (серый)"
     },
     "title": {
       "foreground": "#61A0F3",
-      "description": "Название трека (фиолетовый)"
+      "description": "Название трека (синий)"
+    },
+    "date_header": {
+      "foreground": "#FFD54F",
+      "description": "Заголовок даты в программе (жёлтый)"
+    },
+    "time_text": {
+      "foreground": "#888888",
+      "description": "Время передачи в программе (серый)"
     },
     "selected": {
       "background": "#1E3A8A",
@@ -46,6 +50,12 @@
       "background": "#212121",
       "description": "Текущий трек в плеере"
     }
+  },
+  "track_info": {
+    "foreground": "#C8C8C8",
+    "background": "#1E1E1E",
+    "header_foreground": "#FFB74D",
+    "link_foreground": "#4ECDC4",
+    "description": "Область описания трека"
   }
 }
-
