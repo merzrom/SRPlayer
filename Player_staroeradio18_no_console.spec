@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['Player_staroeradio17_9_8.py'],
+    ['Player_staroeradio18.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Player_staroeradio17_9_8_no_console',
+    name='Player_staroeradio18_no_console',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

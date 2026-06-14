@@ -42,7 +42,7 @@ class StaroeRadioPlayer:
     def __init__(self, root):
         self.root = root
         self.root.title("StaroeRadio Player")
-        self.root.geometry("900x700")
+        self.root.geometry("1000x700")
         self.root.resizable(True, True)
 
         # VLC
@@ -141,7 +141,7 @@ class StaroeRadioPlayer:
 
         # Левая часть — вертикальный PanedWindow (результаты + описание)
         left_paned = tk.PanedWindow(paned_window, orient=tk.VERTICAL, bg="#212121", sashwidth=5)
-        paned_window.add(left_paned, width=525)
+        paned_window.add(left_paned, width=585)
 
         # Верхняя левая часть - результаты поиска
         list_frame = ttk.LabelFrame(left_paned, text="Результаты поиска", padding="5")
@@ -255,7 +255,7 @@ class StaroeRadioPlayer:
         # ttk.Button(btn_frame, text="⏹", command=self.stop).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="⏩", command=self.next_track).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="⭐", command=self.add_to_favorites).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="💾", command=self.download_selected_mp3).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="💾", command=self.download_playing_mp3).pack(side=tk.LEFT, padx=2)
 
 
         # Громкость
@@ -296,6 +296,7 @@ class StaroeRadioPlayer:
 
         self.progress_slider.bind("<Button-1>", self.start_seek)
         self.progress_slider.bind("<ButtonRelease-1>", self.end_seek)
+        self.progress_slider.bind("<B1-Motion>", self.on_seek_drag)
 
         self.time_total = ttk.Label(progress_frame, text="00:00")
         self.time_total.pack(side=tk.RIGHT, padx=(5, 0))
@@ -363,7 +364,9 @@ class StaroeRadioPlayer:
         self.right_paned = right_paned
 
     def refresh_files(self):
-        txt_files = glob.glob(os.path.join(self.script_dir, "*.txt"))
+        data_dir = os.path.join(self.script_dir, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        txt_files = glob.glob(os.path.join(data_dir, "*.txt"))
         self.txt_files = txt_files
 
         if txt_files:
@@ -584,8 +587,8 @@ class StaroeRadioPlayer:
         """Автоматическое воспроизведение следующего трека"""
         if self.current_results and self.current_index + 1 < len(self.current_results):
             self.current_index += 1
-            self._play_and_info()
             self.log("⏭ Автопереход к следующему треку")
+            self._play_and_info()
         elif self.current_results and self.current_index + 1 >= len(self.current_results):
             self.log("📋 Достигнут конец плейлиста")
             self.stop()
@@ -606,6 +609,16 @@ class StaroeRadioPlayer:
 
     def start_seek(self, event):
         self.user_seeking = True
+
+    def on_seek_drag(self, event):
+        """Динамически обновлять таймкод слева при перетаскивании ползунка"""
+        total_length = self.player.get_length()
+        if total_length > 0:
+            width = self.progress_slider.winfo_width()
+            if width > 0:
+                ratio = max(0.0, min(1.0, event.x / width))
+                preview_sec = int((ratio * total_length) / 1000)
+                self.time_current.config(text=self.format_time(preview_sec))
 
     def end_seek(self, event):
         if self.player.get_length() > 0:
@@ -782,6 +795,15 @@ class StaroeRadioPlayer:
             # Если пробелов нет, просто обрезаем до max_length
             return truncated
 
+    def download_playing_mp3(self):
+        """Скачать реально воспроизводимый трек (по playing_track, не по курсору)"""
+        track = self.playing_track
+        if not track:
+            # Нет воспроизводимого трека — пробуем выделенный в списке
+            self.download_selected_mp3()
+            return
+        self._download_mp3([track], is_single=True)
+
     def download_selected_mp3(self):
         """Скачать только выбранный трек"""
         # Получаем позицию курсора в Text виджете
@@ -869,6 +891,13 @@ class StaroeRadioPlayer:
                 # Скачиваем файл
                 cfg = self._get_site_cfg(item)
                 url = cfg['stream'].format(id=item['id'])
+
+                # Логируем название и считаем размер по длине трека (128 кбит/с)
+                self._safe_log(f"⬇️ Скачиваем: {item['title'][:60]}")
+                length_ms = self.player.get_length() if (self.playing_track and self.playing_track.get('id') == item['id']) else 0
+                if length_ms > 0:
+                    size_mb = (length_ms / 1000) * 128 * 1024 / 8 / (1024 * 1024)
+                    self._safe_log(f"📦 Размер: ~{size_mb:.1f} МБ")
 
                 try:
                     urllib.request.urlretrieve(url, filepath)
